@@ -1,31 +1,17 @@
-// Storage Manager - Fixed Version
+// Storage Manager - Simplified (No Auth)
 class StorageManager {
     constructor() {
         this.initialized = false;
         this.init();
     }
 
-    // Khởi tạo storage
     init() {
         if (this.initialized) return;
         
         try {
             console.log('🔄 Initializing storage...');
             
-            // Kiểm tra và khởi tạo keys
-            let keys = this.getKeys();
-            if (!keys || keys.length === 0) {
-                console.log('📝 Creating default admin key...');
-                keys = [{
-                    code: 'BangAdmin17',
-                    type: 'admin',
-                    createdAt: Date.now(),
-                    expiresAt: null,
-                    createdBy: 'system',
-                    isActive: true
-                }];
-                this.saveKeys(keys);
-            }
+            // Không cần khởi tạo keys nữa
 
             // Khởi tạo các collections khác
             const collections = [
@@ -49,7 +35,6 @@ class StorageManager {
 
             this.initialized = true;
             console.log('✅ Storage initialized successfully');
-            console.log('🔑 Available keys:', keys);
             
         } catch (error) {
             console.error('❌ Storage init error:', error);
@@ -75,95 +60,6 @@ class StorageManager {
             console.error(`Error saving ${key}:`, error);
             return false;
         }
-    }
-
-    // Keys Management
-    getKeys() {
-        return this.getItem('access_keys') || [];
-    }
-
-    saveKeys(keys) {
-        return this.setItem('access_keys', keys);
-    }
-
-    validateKey(keyCode) {
-        try {
-            console.log('🔐 Validating key:', keyCode);
-            
-            const keys = this.getKeys();
-            console.log('📋 Available keys:', keys);
-            
-            if (!keys || !Array.isArray(keys)) {
-                console.log('❌ Keys array is invalid');
-                return { valid: false, message: 'Lỗi hệ thống keys' };
-            }
-
-            const key = keys.find(k => k.code === keyCode);
-            
-            if (!key) {
-                console.log('❌ Key not found');
-                return { valid: false, message: 'Key không tồn tại' };
-            }
-            
-            console.log('✅ Key found:', key);
-            
-            if (key.isActive === false) {
-                console.log('❌ Key is inactive');
-                return { valid: false, message: 'Key đã bị vô hiệu hóa' };
-            }
-            
-            if (key.expiresAt && Date.now() > key.expiresAt) {
-                console.log('❌ Key expired');
-                return { valid: false, message: 'Key đã hết hạn' };
-            }
-            
-            console.log('🎉 Key validation successful');
-            return { 
-                valid: true, 
-                isAdmin: key.type === 'admin',
-                key: key
-            };
-            
-        } catch (error) {
-            console.error('💥 Validation error:', error);
-            return { valid: false, message: 'Lỗi xác thực key' };
-        }
-    }
-
-    addKey(keyData) {
-        const keys = this.getKeys();
-        const newKey = {
-            code: keyData.code || this.generateKey(),
-            type: keyData.type,
-            createdAt: Date.now(),
-            expiresAt: this.calculateExpiry(keyData.type),
-            createdBy: keyData.createdBy || 'admin',
-            isActive: true
-        };
-
-        keys.push(newKey);
-        this.saveKeys(keys);
-        return newKey;
-    }
-
-    calculateExpiry(type) {
-        const now = Date.now();
-        switch (type) {
-            case 'week': return now + (7 * 24 * 60 * 60 * 1000);
-            case 'month': return now + (30 * 24 * 60 * 60 * 1000);
-            case '3months': return now + (90 * 24 * 60 * 60 * 1000);
-            case 'forever': return null;
-            default: return null;
-        }
-    }
-
-    generateKey() {
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-        let result = 'QT-';
-        for (let i = 0; i < 9; i++) {
-            result += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        return result;
     }
 
     // Signals Management
@@ -302,7 +198,7 @@ class StorageManager {
         const cooldowns = this.getCooldownCoins();
         cooldowns.push({
             coin: coin.toUpperCase(),
-            until: Date.now() + (2 * 60 * 60 * 1000) // 2 hours
+            until: Date.now() + (2 * 60 * 60 * 1000)
         });
         this.saveCooldownCoins(cooldowns);
         return true;
@@ -334,6 +230,51 @@ class StorageManager {
             profit: totalProfit.toFixed(2),
             active: active.length
         };
+    }
+
+    getWeekStats() {
+        const completed = this.getCompletedSignals();
+        const weekStart = new Date();
+        weekStart.setDate(weekStart.getDate() - 7);
+        weekStart.setHours(0, 0, 0, 0);
+        const weekSignals = completed.filter(s => s.completedAt >= weekStart.getTime());
+        
+        const total = weekSignals.length;
+        const wins = weekSignals.filter(s => s.result === 'win').length;
+        const losses = weekSignals.filter(s => s.result === 'lose').length;
+        const winRate = total > 0 ? ((wins / total) * 100).toFixed(2) : 0;
+        const totalProfit = weekSignals.reduce((sum, s) => sum + (parseFloat(s.profit) || 0), 0);
+        
+        return {
+            total,
+            wins,
+            losses,
+            winRate,
+            profit: totalProfit.toFixed(2)
+        };
+    }
+
+    getDailySummaries() {
+        return this.getItem('daily_summaries') || [];
+    }
+
+    getAnalysisSchedule() {
+        return this.getItem('analysis_schedule') || {
+            lastAnalysis: 0,
+            nextAnalysis: 0,
+            running: false
+        };
+    }
+
+    saveAnalysisSchedule(schedule) {
+        return this.setItem('analysis_schedule', schedule);
+    }
+
+    getPopularCoins() {
+        return this.getItem('popular_coins') || [
+            'BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'ADAUSDT', 'XRPUSDT',
+            'SOLUSDT', 'DOTUSDT', 'DOGEUSDT', 'AVAXUSDT', 'MATICUSDT'
+        ];
     }
 }
 
