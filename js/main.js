@@ -505,3 +505,44 @@ window.addEventListener('unhandledrejection', (event) => {
     console.error('Unhandled promise rejection:', event.reason);
     event.preventDefault();
 });
+
+// Debug functions - Thêm vào cuối file
+console.log('🔧 Loading debug helpers...');
+
+// Hàm kiểm tra nhanh hệ thống
+window.checkSystem = () => {
+    console.log('=== SYSTEM CHECK ===');
+    console.log('StorageManager:', typeof StorageManager);
+    console.log('AuthManager:', typeof AuthManager);
+    console.log('Keys:', StorageManager.getKeys());
+    console.log('Current User:', localStorage.getItem('quantum_current_user'));
+    console.log('===================');
+};
+
+// Hàm reset toàn bộ
+window.resetSystem = () => {
+    if (confirm('Reset toàn bộ hệ thống?')) {
+        localStorage.clear();
+        location.reload();
+    }
+};
+
+// Hàm tạo key admin nếu bị mất
+window.createAdminKey = () => {
+    const keys = [{
+        code: 'BangAdmin17',
+        type: 'admin',
+        createdAt: Date.now(),
+        expiresAt: null,
+        createdBy: 'debug',
+        isActive: true
+    }];
+    localStorage.setItem('quantum_access_keys', JSON.stringify(keys));
+    console.log('✅ Created admin key: BangAdmin17');
+    alert('Đã tạo key admin: BangAdmin17');
+};
+
+// Tự động chạy kiểm tra
+setTimeout(() => {
+    window.checkSystem();
+}, 2000);
