@@ -8,43 +8,8 @@
     <link rel="stylesheet" href="css/animations.css">
 </head>
 <body>
-    <!-- Auth Screen -->
-    <div id="authScreen" class="auth-screen">
-        <div class="auth-container">
-            <div class="logo-3d">
-                <div class="logo-cube">
-                    <div class="cube-face front">Q</div>
-                    <div class="cube-face back">T</div>
-                    <div class="cube-face right">S</div>
-                    <div class="cube-face left">A</div>
-                    <div class="cube-face top">I</div>
-                    <div class="cube-face bottom">✓</div>
-                </div>
-            </div>
-            <h1 class="auth-title">Quantum Trading Suite</h1>
-            <p class="auth-subtitle">Hệ Thống Tín Hiệu AI Chuyên Nghiệp</p>
-            <div class="auth-form">
-                <input type="password" id="keyInput" placeholder="Nhập Key để truy cập..." class="key-input">
-                <button id="loginBtn" class="btn-login">
-                    <span class="btn-text">Đăng Nhập</span>
-                    <span class="btn-shine"></span>
-                </button>
-                <p class="auth-footer">Liên hệ admin để nhận key truy cập</p>
-            </div>
-            <div class="contact-links">
-                <a href="https://m.facebook.com/bang.nguyen.17040/" target="_blank" class="contact-link">
-                    <i>📘</i> Bằng Nguyễn
-                </a>
-                <a href="https://t.me/HOANGDUNGG789" target="_blank" class="contact-link">
-                    <i>✈️</i> @HOANGDUNGG789
-                </a>
-            </div>
-        </div>
-        <div class="particles" id="particles"></div>
-    </div>
-
-    <!-- Main App -->
-    <div id="mainApp" class="main-app" style="display: none;">
+    <!-- Main App - Luôn hiển thị, không cần đăng nhập -->
+    <div id="mainApp" class="main-app">
         <!-- Header -->
         <header class="header">
             <div class="header-container">
@@ -67,10 +32,6 @@
                         <span class="status-dot active"></span>
                         <span class="status-text">Đang quét thị trường...</span>
                     </div>
-                    <div class="user-info">
-                        <span id="userRole">User</span>
-                        <button id="logoutBtn" class="btn-logout">Đăng xuất</button>
-                    </div>
                 </div>
             </div>
         </header>
@@ -85,10 +46,6 @@
                 <a href="#statistics" class="nav-item" data-page="statistics">
                     <i class="icon">📈</i>
                     <span>Thống Kê</span>
-                </a>
-                <a href="#permissions" class="nav-item admin-only" data-page="permissions" style="display: none;">
-                    <i class="icon">🔑</i>
-                    <span>Quyền Hạn</span>
                 </a>
             </nav>
             <div class="sidebar-footer">
@@ -114,9 +71,6 @@
                     <div class="page-actions">
                         <button id="refreshSignals" class="btn-icon">
                             <i>🔄</i>
-                        </button>
-                        <button id="addManualSignal" class="btn-primary admin-only" style="display: none;">
-                            <i>➕</i> Thêm Tín Hiệu
                         </button>
                     </div>
                 </div>
@@ -169,12 +123,11 @@
                                     <th>RR</th>
                                     <th>Lý Do</th>
                                     <th>Trạng Thái</th>
-                                    <th class="admin-only" style="display: none;">Hành Động</th>
                                 </tr>
                             </thead>
                             <tbody id="activeSignalsBody">
                                 <tr class="no-data">
-                                    <td colspan="10">Đang chờ tín hiệu...</td>
+                                    <td colspan="9">Đang chờ tín hiệu...</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -264,138 +217,12 @@
                     </div>
                 </div>
             </section>
-
-            <!-- Permissions Page (Admin Only) -->
-            <section id="permissionsPage" class="page admin-only" style="display: none;">
-                <div class="page-header">
-                    <h1 class="page-title">Quản Lý Quyền Hạn</h1>
-                </div>
-
-                <!-- Key Management -->
-                <div class="permission-section">
-                    <h2 class="section-title">Tạo Key Truy Cập</h2>
-                    <div class="key-creation-form">
-                        <div class="form-group">
-                            <label>Loại Key:</label>
-                            <select id="keyType">
-                                <option value="week">1 Tuần</option>
-                                <option value="month">1 Tháng</option>
-                                <option value="3months">3 Tháng</option>
-                                <option value="forever">Vĩnh Viễn</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Key Tùy Chỉnh (để trống để tự động):</label>
-                            <input type="text" id="customKey" placeholder="Nhập key hoặc để trống">
-                        </div>
-                        <button id="generateKeyBtn" class="btn-primary">Tạo Key</button>
-                    </div>
-                    <div class="keys-list" id="keysList"></div>
-                </div>
-
-                <!-- Manual Signal -->
-                <div class="permission-section">
-                    <h2 class="section-title">Gửi Tín Hiệu Thủ Công</h2>
-                    <div class="manual-signal-form">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Coin:</label>
-                                <input type="text" id="manualCoin" placeholder="BTCUSDT">
-                            </div>
-                            <div class="form-group">
-                                <label>Hướng:</label>
-                                <select id="manualDirection">
-                                    <option value="LONG">LONG</option>
-                                    <option value="SHORT">SHORT</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Entry:</label>
-                                <input type="number" id="manualEntry" placeholder="0.00" step="0.01">
-                            </div>
-                            <div class="form-group">
-                                <label>TP:</label>
-                                <input type="number" id="manualTP" placeholder="0.00" step="0.01">
-                            </div>
-                            <div class="form-group">
-                                <label>SL:</label>
-                                <input type="number" id="manualSL" placeholder="0.00" step="0.01">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label>Lý Do:</label>
-                            <textarea id="manualReason" placeholder="Lý do vào lệnh..."></textarea>
-                        </div>
-                        <button id="sendManualSignalBtn" class="btn-primary">Gửi Tín Hiệu</button>
-                    </div>
-                </div>
-
-                <!-- Admin Management -->
-                <div class="permission-section">
-                    <h2 class="section-title">Quản Lý Admin</h2>
-                    <div class="admin-form">
-                        <div class="form-group">
-                            <label>Key Admin Mới:</label>
-                            <input type="text" id="newAdminKey" placeholder="Nhập key admin">
-                        </div>
-                        <button id="addAdminBtn" class="btn-primary">Thêm Admin</button>
-                    </div>
-                    <div class="admins-list" id="adminsList"></div>
-                </div>
-            </section>
         </main>
     </div>
 
-    <!-- Manual Signal Modal -->
-    <div id="manualSignalModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Thêm Tín Hiệu Thủ Công</h2>
-                <button class="modal-close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label>Coin:</label>
-                    <input type="text" id="modalCoin" placeholder="BTCUSDT">
-                </div>
-                <div class="form-group">
-                    <label>Hướng:</label>
-                    <select id="modalDirection">
-                        <option value="LONG">LONG</option>
-                        <option value="SHORT">SHORT</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Entry:</label>
-                    <input type="number" id="modalEntry" placeholder="0.00" step="0.01">
-                </div>
-                <div class="form-group">
-                    <label>TP:</label>
-                    <input type="number" id="modalTP" placeholder="0.00" step="0.01">
-                </div>
-                <div class="form-group">
-                    <label>SL:</label>
-                    <input type="number" id="modalSL" placeholder="0.00" step="0.01">
-                </div>
-                <div class="form-group">
-                    <label>Lý Do:</label>
-                    <textarea id="modalReason" placeholder="Lý do vào lệnh..."></textarea>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary modal-cancel">Hủy</button>
-                <button class="btn-primary modal-submit">Gửi Tín Hiệu</button>
-            </div>
-        </div>
-    </div>
-
     <script src="js/storage.js"></script>
-    <script src="js/auth.js"></script>
     <script src="js/analysis.js"></script>
     <script src="js/signals.js"></script>
-    <script src="js/admin.js"></script>
     <script src="js/main.js"></script>
 </body>
 </html>
