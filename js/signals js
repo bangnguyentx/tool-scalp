@@ -1,4 +1,4 @@
-// Signal Manager - Quản lý hiển thị tín hiệu
+// Signal Manager - Simplified (No Admin)
 class SignalManager {
     constructor() {
         this.currentPage = 'signals';
@@ -109,7 +109,7 @@ class SignalManager {
         if (signals.length === 0) {
             tbody.innerHTML = `
                 <tr class="no-data">
-                    <td colspan="10">Đang chờ tín hiệu...</td>
+                    <td colspan="9">Đang chờ tín hiệu...</td>
                 </tr>
             `;
             return;
@@ -117,7 +117,6 @@ class SignalManager {
 
         tbody.innerHTML = signals.map(signal => {
             const time = new Date(signal.createdAt).toLocaleTimeString('vi-VN');
-            const isAdmin = window.AuthManager?.currentUser?.isAdmin || false;
             
             return `
                 <tr class="signal-row fade-in">
@@ -137,11 +136,6 @@ class SignalManager {
                         <span class="status-badge ${this.getStatusClass(signal)}">
                             ${this.getStatusText(signal)}
                         </span>
-                    </td>
-                    <td class="admin-only" style="display: ${isAdmin ? 'table-cell' : 'none'}">
-                        <button class="btn-danger btn-sm" onclick="SignalManager.deleteSignal('${signal.id}')">
-                            🗑️
-                        </button>
                     </td>
                 </tr>
             `;
@@ -224,13 +218,13 @@ class SignalManager {
         document.getElementById('statTotalSignals').textContent = stats.total;
         document.getElementById('statWinRate').textContent = `${stats.winRate}%`;
         document.getElementById('statAvgProfit').textContent = `${stats.avgProfit}%`;
-        document.getElementById('statAvgRR').textContent = '1.5:1'; // Giá trị mẫu
+        document.getElementById('statAvgRR').textContent = '1.5:1';
         
         // Cập nhật progress rings và charts
         this.updateProgressRing('winRateRing', stats.winRate);
         this.updateSimpleChart('totalSignalsChart', stats.total);
         this.updateSimpleChart('avgProfitChart', parseFloat(stats.avgProfit));
-        this.updateSimpleChart('avgRRChart', 1.5); // Giá trị mẫu
+        this.updateSimpleChart('avgRRChart', 1.5);
     }
 
     updateProgressRing(ringId, percentage) {
@@ -270,7 +264,7 @@ class SignalManager {
 
     updateWeeklySummary() {
         const tbody = document.getElementById('weeklySummaryBody');
-        const summaries = StorageManager.getDailySummaries().slice(-7); // 7 ngày gần nhất
+        const summaries = StorageManager.getDailySummaries().slice(-7);
         
         if (summaries.length === 0) {
             tbody.innerHTML = `
@@ -298,24 +292,19 @@ class SignalManager {
     }
 
     handleTimeFilter(period) {
-        // Cập nhật active button
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.classList.remove('active');
         });
         document.querySelector(`[data-period="${period}"]`).classList.add('active');
 
-        // Cập nhật dữ liệu theo period
         this.refreshStatisticsByPeriod(period);
     }
 
     refreshStatisticsByPeriod(period) {
-        // Trong thực tế, bạn sẽ lọc dữ liệu theo period
-        // Ở đây chúng ta dùng dữ liệu hiện tại
         this.refreshStatistics();
     }
 
     startAutoRefresh() {
-        // Tự động refresh mỗi 30 giây
         setInterval(() => {
             if (this.currentPage === 'signals') {
                 this.refreshSignals();
@@ -326,7 +315,6 @@ class SignalManager {
     }
 
     showLoading() {
-        // Thêm hiệu ứng loading nếu cần
         const refreshBtn = document.getElementById('refreshSignals');
         refreshBtn.innerHTML = '<i>⏳</i>';
         refreshBtn.disabled = true;
@@ -336,38 +324,6 @@ class SignalManager {
         const refreshBtn = document.getElementById('refreshSignals');
         refreshBtn.innerHTML = '<i>🔄</i>';
         refreshBtn.disabled = false;
-    }
-
-    // Xóa tín hiệu (chỉ admin)
-    static deleteSignal(signalId) {
-        if (!window.AuthManager?.currentUser?.isAdmin) {
-            window.AuthManager?.showMessage('Bạn không có quyền thực hiện hành động này', 'error');
-            return;
-        }
-
-        if (confirm('Bạn có chắc muốn xóa tín hiệu này?')) {
-            StorageManager.removeSignal(signalId);
-            StorageManager.removeTrackedCoin(signalId);
-            
-            window.SignalManager.refreshSignals();
-            window.AuthManager?.showMessage('Đã xóa tín hiệu thành công', 'success');
-        }
-    }
-
-    // Thêm tín hiệu thủ công
-    static addManualSignal(signalData) {
-        const newSignal = StorageManager.addSignal({
-            ...signalData,
-            createdBy: 'Manual'
-        });
-
-        // Thêm vào danh sách theo dõi
-        StorageManager.addTrackedCoin(newSignal.id, signalData.coin);
-
-        // Refresh hiển thị
-        window.SignalManager.refreshSignals();
-
-        return newSignal;
     }
 }
 
