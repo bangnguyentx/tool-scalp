@@ -15,7 +15,8 @@ class StorageManager {
                     type: 'admin',
                     createdAt: Date.now(),
                     expiresAt: null,
-                    createdBy: 'system'
+                    createdBy: 'system',
+                    isActive: true
                 }]);
             }
 
@@ -107,10 +108,14 @@ class StorageManager {
 
     validateKey(keyCode) {
         const keys = this.getKeys();
-        const key = keys.find(k => k.code === keyCode && k.isActive);
+        const key = keys.find(k => k.code === keyCode);
         
         if (!key) {
-            return { valid: false, message: 'Key không tồn tại hoặc đã bị vô hiệu hóa' };
+            return { valid: false, message: 'Key không tồn tại' };
+        }
+        
+        if (key.isActive === false) {
+            return { valid: false, message: 'Key đã bị vô hiệu hóa' };
         }
         
         if (key.expiresAt && Date.now() > key.expiresAt) {
@@ -210,7 +215,7 @@ class StorageManager {
         const completed = this.getCompletedSignals();
         const completedSignal = {
             ...signal,
-            result: result.status, // 'win' or 'lose'
+            result: result.status,
             exitPrice: result.exitPrice,
             profit: result.profit,
             completedAt: Date.now(),
@@ -312,7 +317,7 @@ class StorageManager {
         }
     }
 
-    // Cooldown Management (coins không được phân tích trong 2 tiếng)
+    // Cooldown Management
     getCooldownCoins() {
         try {
             const result = localStorage.getItem('quantum_cooldown_coins');
@@ -350,11 +355,9 @@ class StorageManager {
         const cooldowns = this.getCooldownCoins();
         const now = Date.now();
         
-        // Lọc bỏ các cooldown đã hết hạn
         const activeCooldowns = cooldowns.filter(c => c.until > now);
         this.saveCooldownCoins(activeCooldowns);
         
-        // Kiểm tra coin có trong cooldown không
         return activeCooldowns.some(c => c.coin === coin.toUpperCase());
     }
 
@@ -432,7 +435,7 @@ class StorageManager {
     }
 
     // Daily Summary
-    async generateDailySummary() {
+    generateDailySummary() {
         const stats = this.getTodayStats();
         const active = this.getActiveSignals();
         
@@ -448,12 +451,10 @@ class StorageManager {
             generatedAt: Date.now()
         };
         
-        // Lưu summary
         try {
             const summaries = this.getDailySummaries();
             summaries.push(summary);
             
-            // Chỉ giữ lại 30 ngày gần nhất
             const last30Days = summaries.slice(-30);
             localStorage.setItem('quantum_daily_summaries', JSON.stringify(last30Days));
             
