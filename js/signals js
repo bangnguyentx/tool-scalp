@@ -1,0 +1,377 @@
+// Signal Manager - Quản lý hiển thị tín hiệu
+class SignalManager {
+    constructor() {
+        this.currentPage = 'signals';
+        this.init();
+    }
+
+    init() {
+        this.bindEvents();
+        this.refreshSignals();
+        this.startAutoRefresh();
+    }
+
+    bindEvents() {
+        // Sự kiện refresh tín hiệu
+        document.getElementById('refreshSignals').addEventListener('click', () => {
+            this.refreshSignals();
+        });
+
+        // Sự kiện menu navigation
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.switchPage(item.dataset.page);
+            });
+        });
+
+        // Sự kiện menu toggle
+        document.getElementById('menuToggle').addEventListener('click', () => {
+            this.toggleSidebar();
+        });
+
+        // Sự kiện filter thời gian
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.handleTimeFilter(btn.dataset.period);
+            });
+        });
+    }
+
+    switchPage(page) {
+        // Ẩn tất cả các trang
+        document.querySelectorAll('.page').forEach(p => {
+            p.classList.remove('active');
+        });
+
+        // Hiển thị trang được chọn
+        document.getElementById(`${page}Page`).classList.add('active');
+
+        // Cập nhật menu active
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        document.querySelector(`[data-page="${page}"]`).classList.add('active');
+
+        this.currentPage = page;
+
+        // Refresh dữ liệu cho trang hiện tại
+        if (page === 'signals') {
+            this.refreshSignals();
+        } else if (page === 'statistics') {
+            this.refreshStatistics();
+        }
+    }
+
+    toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        sidebar.classList.toggle('open');
+    }
+
+    async refreshSignals() {
+        try {
+            // Hiệu ứng loading
+            this.showLoading();
+
+            // Lấy dữ liệu từ storage
+            const activeSignals = StorageManager.getActiveSignals();
+            const completedSignals = StorageManager.getCompletedSignalsToday();
+            const stats = StorageManager.getTodayStats();
+
+            // Cập nhật summary cards
+            this.updateSummaryCards(stats);
+
+            // Cập nhật bảng tín hiệu đang hoạt động
+            this.updateActiveSignalsTable(activeSignals);
+
+            // Cập nhật bảng tín hiệu đã hoàn thành
+            this.updateCompletedSignalsTable(completedSignals);
+
+            // Ẩn loading
+            this.hideLoading();
+
+        } catch (error) {
+            console.error('Error refreshing signals:', error);
+            this.hideLoading();
+        }
+    }
+
+    updateSummaryCards(stats) {
+        document.getElementById('totalSignalsToday').textContent = stats.total;
+        document.getElementById('winSignalsToday').textContent = stats.wins;
+        document.getElementById('loseSignalsToday').textContent = stats.losses;
+        document.getElementById('profitToday').textContent = `${stats.profit}%`;
+    }
+
+    updateActiveSignalsTable(signals) {
+        const tbody = document.getElementById('activeSignalsBody');
+        
+        if (signals.length === 0) {
+            tbody.innerHTML = `
+                <tr class="no-data">
+                    <td colspan="10">Đang chờ tín hiệu...</td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = signals.map(signal => {
+            const time = new Date(signal.createdAt).toLocaleTimeString('vi-VN');
+            const isAdmin = window.AuthManager?.currentUser?.isAdmin || false;
+            
+            return `
+                <tr class="signal-row fade-in">
+                    <td>${time}</td>
+                    <td><strong>${signal.coin}</strong></td>
+                    <td>
+                        <span class="direction-badge ${signal.direction.toLowerCase()}">
+                            ${signal.direction}
+                        </span>
+                    </td>
+                    <td>${signal.entry}</td>
+                    <td>${signal.tp}</td>
+                    <td>${signal.sl}</td>
+                    <td>${signal.rr}:1</td>
+                    <td>${signal.reason}</td>
+                    <td>
+                        <span class="status-badge ${this.getStatusClass(signal)}">
+                            ${this.getStatusText(signal)}
+                        </span>
+                    </td>
+                    <td class="admin-only" style="display: ${isAdmin ? 'table-cell' : 'none'}">
+                        <button class="btn-danger btn-sm" onclick="SignalManager.deleteSignal('${signal.id}')">
+                            🗑️
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    updateCompletedSignalsTable(signals) {
+        const tbody = document.getElementById('completedSignalsBody');
+        
+        if (signals.length === 0) {
+            tbody.innerHTML = `
+                <tr class="no-data">
+                    <td colspan="8">Chưa có tín hiệu nào hoàn thành</td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = signals.map(signal => {
+            const time = new Date(signal.completedAt).toLocaleTimeString('vi-VN');
+            const profitClass = parseFloat(signal.profit) >= 0 ? 'profit-positive' : 'profit-negative';
+            const resultClass = signal.result === 'win' ? 'result-win' : 'result-lose';
+            
+            return `
+                <tr class="completed-row fade-in">
+                    <td>${time}</td>
+                    <td><strong>${signal.coin}</strong></td>
+                    <td>
+                        <span class="direction-badge ${signal.direction.toLowerCase()}">
+                            ${signal.direction}
+                        </span>
+                    </td>
+                    <td>${signal.entry}</td>
+                    <td>${signal.exitPrice}</td>
+                    <td>${signal.rrAchieved || signal.rr}:1</td>
+                    <td class="${profitClass}">${signal.profit}%</td>
+                    <td>
+                        <span class="result-badge ${resultClass}">
+                            ${signal.result === 'win' ? 'THẮNG' : 'THUA'}
+                        </span>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    getStatusClass(signal) {
+        const currentProfit = parseFloat(signal.profit);
+        
+        if (currentProfit > 0) {
+            return 'status-profit';
+        } else if (currentProfit < 0) {
+            return 'status-loss';
+        } else {
+            return 'status-pending';
+        }
+    }
+
+    getStatusText(signal) {
+        const currentProfit = parseFloat(signal.profit);
+        
+        if (currentProfit > 0) {
+            return `+${signal.profit}%`;
+        } else if (currentProfit < 0) {
+            return `${signal.profit}%`;
+        } else {
+            return 'ĐANG CHỜ';
+        }
+    }
+
+    refreshStatistics() {
+        const stats = StorageManager.getTodayStats();
+        const weekStats = StorageManager.getWeekStats();
+        
+        this.updateStatisticsCards(stats, weekStats);
+        this.updateWeeklySummary();
+    }
+
+    updateStatisticsCards(stats, weekStats) {
+        document.getElementById('statTotalSignals').textContent = stats.total;
+        document.getElementById('statWinRate').textContent = `${stats.winRate}%`;
+        document.getElementById('statAvgProfit').textContent = `${stats.avgProfit}%`;
+        document.getElementById('statAvgRR').textContent = '1.5:1'; // Giá trị mẫu
+        
+        // Cập nhật progress rings và charts
+        this.updateProgressRing('winRateRing', stats.winRate);
+        this.updateSimpleChart('totalSignalsChart', stats.total);
+        this.updateSimpleChart('avgProfitChart', parseFloat(stats.avgProfit));
+        this.updateSimpleChart('avgRRChart', 1.5); // Giá trị mẫu
+    }
+
+    updateProgressRing(ringId, percentage) {
+        const ring = document.getElementById(ringId);
+        if (!ring) return;
+
+        const normalizedPercentage = Math.min(Math.max(percentage, 0), 100);
+        const circumference = 2 * Math.PI * 45;
+        const offset = circumference - (normalizedPercentage / 100) * circumference;
+
+        ring.innerHTML = `
+            <svg width="100" height="100" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="45" stroke="var(--border)" stroke-width="8" fill="none"/>
+                <circle cx="50" cy="50" r="45" stroke="var(--success)" stroke-width="8" fill="none" 
+                        stroke-dasharray="${circumference}" stroke-dashoffset="${offset}"
+                        transform="rotate(-90 50 50)" stroke-linecap="round"/>
+                <text x="50" y="50" text-anchor="middle" dy="7" font-size="20" font-weight="bold" fill="var(--text)">
+                    ${Math.round(normalizedPercentage)}%
+                </text>
+            </svg>
+        `;
+    }
+
+    updateSimpleChart(chartId, value) {
+        const chart = document.getElementById(chartId);
+        if (!chart) return;
+
+        const normalizedValue = Math.min(Math.max(value, 0), 100);
+        const bars = Math.ceil(normalizedValue / 10);
+        
+        chart.innerHTML = Array.from({length: 10}, (_, i) => {
+            const height = (i < bars) ? (i + 1) * 8 : 4;
+            const opacity = (i < bars) ? 1 : 0.3;
+            return `<div class="chart-bar" style="height: ${height}px; opacity: ${opacity};"></div>`;
+        }).join('');
+    }
+
+    updateWeeklySummary() {
+        const tbody = document.getElementById('weeklySummaryBody');
+        const summaries = StorageManager.getDailySummaries().slice(-7); // 7 ngày gần nhất
+        
+        if (summaries.length === 0) {
+            tbody.innerHTML = `
+                <tr class="no-data">
+                    <td colspan="6">Chưa có dữ liệu thống kê</td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = summaries.map(summary => {
+            const profitClass = parseFloat(summary.profit) >= 0 ? 'profit-positive' : 'profit-negative';
+            
+            return `
+                <tr>
+                    <td>${summary.date}</td>
+                    <td>${summary.totalSignals}</td>
+                    <td>${summary.wins}</td>
+                    <td>${summary.losses}</td>
+                    <td>${summary.winRate}%</td>
+                    <td class="${profitClass}">${summary.profit}%</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    handleTimeFilter(period) {
+        // Cập nhật active button
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`[data-period="${period}"]`).classList.add('active');
+
+        // Cập nhật dữ liệu theo period
+        this.refreshStatisticsByPeriod(period);
+    }
+
+    refreshStatisticsByPeriod(period) {
+        // Trong thực tế, bạn sẽ lọc dữ liệu theo period
+        // Ở đây chúng ta dùng dữ liệu hiện tại
+        this.refreshStatistics();
+    }
+
+    startAutoRefresh() {
+        // Tự động refresh mỗi 30 giây
+        setInterval(() => {
+            if (this.currentPage === 'signals') {
+                this.refreshSignals();
+            } else if (this.currentPage === 'statistics') {
+                this.refreshStatistics();
+            }
+        }, 30000);
+    }
+
+    showLoading() {
+        // Thêm hiệu ứng loading nếu cần
+        const refreshBtn = document.getElementById('refreshSignals');
+        refreshBtn.innerHTML = '<i>⏳</i>';
+        refreshBtn.disabled = true;
+    }
+
+    hideLoading() {
+        const refreshBtn = document.getElementById('refreshSignals');
+        refreshBtn.innerHTML = '<i>🔄</i>';
+        refreshBtn.disabled = false;
+    }
+
+    // Xóa tín hiệu (chỉ admin)
+    static deleteSignal(signalId) {
+        if (!window.AuthManager?.currentUser?.isAdmin) {
+            window.AuthManager?.showMessage('Bạn không có quyền thực hiện hành động này', 'error');
+            return;
+        }
+
+        if (confirm('Bạn có chắc muốn xóa tín hiệu này?')) {
+            StorageManager.removeSignal(signalId);
+            StorageManager.removeTrackedCoin(signalId);
+            
+            window.SignalManager.refreshSignals();
+            window.AuthManager?.showMessage('Đã xóa tín hiệu thành công', 'success');
+        }
+    }
+
+    // Thêm tín hiệu thủ công
+    static addManualSignal(signalData) {
+        const newSignal = StorageManager.addSignal({
+            ...signalData,
+            createdBy: 'Manual'
+        });
+
+        // Thêm vào danh sách theo dõi
+        StorageManager.addTrackedCoin(newSignal.id, signalData.coin);
+
+        // Refresh hiển thị
+        window.SignalManager.refreshSignals();
+
+        return newSignal;
+    }
+}
+
+// Khởi tạo SignalManager
+document.addEventListener('DOMContentLoaded', () => {
+    window.SignalManager = new SignalManager();
+});
