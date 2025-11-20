@@ -182,25 +182,29 @@ class QuantumTradingApp {
     }
 
     startBackgroundServices() {
-    // Với Static Site, bot chạy trong trình duyệt user
-    console.log('🤖 Khởi động bot phân tích trong trình duyệt...');
-    
-    // Kiểm tra và chạy bot phân tích
-    if (this.components.analysis && !this.components.analysis.isRunning) {
-        this.components.analysis.startAutoAnalysis();
-    }
-
-    // Các services khác...
-    setInterval(() => {
-        if (this.components.analysis) {
-            this.components.analysis.checkDailyReport();
+        // Với Static Site, bot chạy trong trình duyệt user
+        console.log('🤖 Khởi động bot phân tích trong trình duyệt...');
+        
+        // Kiểm tra và chạy bot phân tích
+        if (this.components.analysis && !this.components.analysis.isRunning) {
+            this.components.analysis.startAutoAnalysis();
         }
-    }, 60000);
 
-    setInterval(() => {
-        this.autoSave();
-    }, 5 * 60 * 1000);
-}
+        // Các services khác...
+        setInterval(() => {
+            if (this.components.analysis) {
+                this.components.analysis.checkDailyReport();
+            }
+        }, 60000);
+
+        setInterval(() => {
+            this.autoSave();
+        }, 5 * 60 * 1000);
+
+        setInterval(() => {
+            this.updateSystemStatus();
+        }, 60000);
+    }
 
     refreshAllData() {
         if (this.components.signals) {
