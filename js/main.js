@@ -182,23 +182,25 @@ class QuantumTradingApp {
     }
 
     startBackgroundServices() {
-        // Kiểm tra báo cáo hàng ngày mỗi phút
-        setInterval(() => {
-            if (this.components.analysis) {
-                this.components.analysis.checkDailyReport();
-            }
-        }, 60000);
-
-        // Auto-save mỗi 5 phút
-        setInterval(() => {
-            this.autoSave();
-        }, 5 * 60 * 1000);
-
-        // Update system status mỗi phút
-        setInterval(() => {
-            this.updateSystemStatus();
-        }, 60000);
+    // Với Static Site, bot chạy trong trình duyệt user
+    console.log('🤖 Khởi động bot phân tích trong trình duyệt...');
+    
+    // Kiểm tra và chạy bot phân tích
+    if (this.components.analysis && !this.components.analysis.isRunning) {
+        this.components.analysis.startAutoAnalysis();
     }
+
+    // Các services khác...
+    setInterval(() => {
+        if (this.components.analysis) {
+            this.components.analysis.checkDailyReport();
+        }
+    }, 60000);
+
+    setInterval(() => {
+        this.autoSave();
+    }, 5 * 60 * 1000);
+}
 
     refreshAllData() {
         if (this.components.signals) {
