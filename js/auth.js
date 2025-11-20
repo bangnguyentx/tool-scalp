@@ -7,7 +7,6 @@ class AuthManager {
     }
 
     init() {
-        // Kiểm tra nếu đã đăng nhập từ trước
         const savedUser = localStorage.getItem('quantum_current_user');
         if (savedUser) {
             this.currentUser = JSON.parse(savedUser);
@@ -21,19 +20,16 @@ class AuthManager {
     }
 
     bindEvents() {
-        // Sự kiện đăng nhập
         document.getElementById('loginBtn').addEventListener('click', () => {
             this.handleLogin();
         });
 
-        // Sự kiện nhấn Enter trong input key
         document.getElementById('keyInput').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 this.handleLogin();
             }
         });
 
-        // Sự kiện đăng xuất
         document.getElementById('logoutBtn').addEventListener('click', () => {
             this.handleLogout();
         });
@@ -49,12 +45,10 @@ class AuthManager {
             return;
         }
 
-        // Hiệu ứng loading
         loginBtn.disabled = true;
         loginBtn.querySelector('.btn-text').textContent = 'Đang xác thực...';
 
         try {
-            // Giả lập độ trễ xác thực
             await new Promise(resolve => setTimeout(resolve, 1000));
 
             const validation = StorageManager.validateKey(key);
@@ -69,7 +63,6 @@ class AuthManager {
                 
                 this.isAuthenticated = true;
                 
-                // Lưu thông tin user
                 localStorage.setItem('quantum_current_user', JSON.stringify(this.currentUser));
                 
                 this.showMainApp();
@@ -81,7 +74,6 @@ class AuthManager {
             console.error('Login error:', error);
             this.showMessage('Lỗi xác thực. Vui lòng thử lại.', 'error');
         } finally {
-            // Khôi phục trạng thái nút
             loginBtn.disabled = false;
             loginBtn.querySelector('.btn-text').textContent = 'Đăng Nhập';
         }
@@ -105,10 +97,8 @@ class AuthManager {
         document.getElementById('authScreen').style.display = 'none';
         document.getElementById('mainApp').style.display = 'block';
         
-        // Cập nhật thông tin user
         this.updateUserInfo();
         
-        // Khởi tạo các component chính
         if (typeof window.SignalManager !== 'undefined') {
             window.SignalManager.init();
         }
@@ -124,7 +114,6 @@ class AuthManager {
             userRoleElement.textContent = this.currentUser.isAdmin ? 'Admin' : 'User';
         }
 
-        // Hiển thị/ẩn các tính năng admin
         const adminElements = document.querySelectorAll('.admin-only');
         adminElements.forEach(element => {
             element.style.display = this.currentUser.isAdmin ? 'flex' : 'none';
@@ -141,21 +130,17 @@ class AuthManager {
             const particle = document.createElement('div');
             particle.className = 'particle';
             
-            // Kích thước ngẫu nhiên
             const size = Math.random() * 6 + 2;
             particle.style.width = `${size}px`;
             particle.style.height = `${size}px`;
             
-            // Vị trí ngẫu nhiên
             particle.style.left = `${Math.random() * 100}%`;
             particle.style.top = `${Math.random() * 100}%`;
             
-            // Màu sắc ngẫu nhiên
             const colors = ['#3b82f6', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b'];
             const color = colors[Math.floor(Math.random() * colors.length)];
             particle.style.background = color;
             
-            // Hiệu ứng động
             const duration = Math.random() * 20 + 10;
             const delay = Math.random() * 5;
             particle.style.animation = `float ${duration}s linear ${delay}s infinite`;
@@ -165,7 +150,6 @@ class AuthManager {
     }
 
     showMessage(message, type = 'info') {
-        // Tạo toast message
         const toast = document.createElement('div');
         toast.className = `toast-message toast-${type}`;
         toast.innerHTML = `
@@ -176,7 +160,6 @@ class AuthManager {
             </div>
         `;
 
-        // Thêm styles nếu chưa có
         if (!document.querySelector('#toast-styles')) {
             const styles = document.createElement('style');
             styles.id = 'toast-styles';
@@ -236,15 +219,12 @@ class AuthManager {
 
         document.body.appendChild(toast);
 
-        // Hiển thị toast
         setTimeout(() => toast.classList.add('show'), 100);
 
-        // Tự động ẩn sau 5 giây
         const autoRemove = setTimeout(() => {
             this.removeToast(toast);
         }, 5000);
 
-        // Sự kiện đóng
         toast.querySelector('.toast-close').addEventListener('click', () => {
             clearTimeout(autoRemove);
             this.removeToast(toast);
@@ -270,13 +250,11 @@ class AuthManager {
         return icons[type] || icons.info;
     }
 
-    // Kiểm tra session
     checkSession() {
         if (!this.isAuthenticated || !this.currentUser) {
             return false;
         }
 
-        // Kiểm tra thời gian đăng nhập (24h)
         const loginTime = this.currentUser.loginTime;
         const now = Date.now();
         const twentyFourHours = 24 * 60 * 60 * 1000;
