@@ -106,28 +106,45 @@ class StorageManager {
         return true;
     }
 
-    validateKey(keyCode) {
+    // Trong js/storage.js - Sửa hàm validateKey
+validateKey(keyCode) {
+    console.log('🔐 Validating key:', keyCode);
+    
+    try {
         const keys = this.getKeys();
+        console.log('📋 Available keys:', keys);
+        
         const key = keys.find(k => k.code === keyCode);
         
         if (!key) {
+            console.log('❌ Key not found');
             return { valid: false, message: 'Key không tồn tại' };
         }
         
+        console.log('✅ Key found:', key);
+        
         if (key.isActive === false) {
+            console.log('❌ Key is inactive');
             return { valid: false, message: 'Key đã bị vô hiệu hóa' };
         }
         
         if (key.expiresAt && Date.now() > key.expiresAt) {
+            console.log('❌ Key expired');
             return { valid: false, message: 'Key đã hết hạn' };
         }
         
+        console.log('🎉 Key validation successful');
         return { 
             valid: true, 
             isAdmin: key.type === 'admin',
             key: key
         };
+        
+    } catch (error) {
+        console.error('💥 Validation error:', error);
+        return { valid: false, message: 'Lỗi xác thực key' };
     }
+}
 
     generateKey() {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
