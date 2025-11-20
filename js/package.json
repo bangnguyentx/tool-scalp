@@ -1,0 +1,22 @@
+{
+  "name": "quantum-trading-suite",
+  "version": "1.0.0",
+  "description": "AI-Powered Trading Signals System",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "path": "^0.12.7",
+    "node-cron": "^3.0.2",
+    "axios": "^1.5.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "keywords": ["trading", "signals", "crypto", "binance", "ai"],
+  "author": "Bằng Nguyễn",
+  "license": "MIT"
+}
